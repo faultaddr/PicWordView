@@ -3,15 +3,21 @@ package com.example.panyunyi.picwordview;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.NinePatchDrawable;
+import android.os.Build;
+import android.support.annotation.RequiresApi;
+import android.text.Layout;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.style.ImageSpan;
@@ -33,7 +39,8 @@ public class PicWordView extends View {
     private int mExampleColor = Color.RED; // TODO: use a default from R.color...
     private float mExampleDimension = 0; // TODO: use a default from R.dimen...
     private Drawable mExampleDrawable;
-
+    private int mLineHeight;
+    private Layout layout = null;
     private TextPaint mTextPaint;
     private float mTextWidth;
     private float mTextHeight;
@@ -59,11 +66,13 @@ public class PicWordView extends View {
 
     private void init(AttributeSet attrs, int defStyle) {
         // Load attributes
+
         final TypedArray a = getContext().obtainStyledAttributes(
                 attrs, R.styleable.PicWordView, defStyle, 0);
 
         mExampleString = SpannableStringBuilder.valueOf(a.getString(
                 R.styleable.PicWordView_exampleString));
+        mExampleString.clear();
         mExampleColor = a.getColor(
                 R.styleable.PicWordView_exampleColor,
                 mExampleColor);
@@ -85,6 +94,7 @@ public class PicWordView extends View {
         mTextPaint = new TextPaint();
         mTextPaint.setFlags(Paint.ANTI_ALIAS_FLAG);
         mTextPaint.setTextAlign(Paint.Align.LEFT);
+
         // Update TextPaint and text measurements from attributes
         invalidateTextPaintAndMeasurements();
     }
@@ -93,11 +103,12 @@ public class PicWordView extends View {
         mTextPaint.setTextSize(mExampleDimension);
         mTextPaint.setColor(mExampleColor);
         mTextWidth = mTextPaint.measureText(mExampleString.toString());
-
+        cacuLineHeight();
         Paint.FontMetrics fontMetrics = mTextPaint.getFontMetrics();
         mTextHeight = fontMetrics.bottom;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
@@ -111,17 +122,69 @@ public class PicWordView extends View {
 
         int contentWidth = getWidth() - paddingLeft - paddingRight;
         int contentHeight = getHeight() - paddingTop - paddingBottom;
-
+        Log.i("String",mExampleString.toString());
         // Draw the text.
-        canvas.drawText(mExampleString.toString(),
-                paddingLeft + (contentWidth - mTextWidth) / 2,
-                paddingTop + (contentHeight + mTextHeight) / 2,
-                mTextPaint);
-        canvas.drawBitmap(bitmapList.get(0),200,300,mTextPaint);
+
+        int currentHeight=paddingTop+mLineHeight;
+
+        String s[]=mExampleString.toString().split("\n");
+        int count=0;
+        float bitmapHeight=0;
+        for(String ss:s) {
+
+            if (ss.endsWith("img")||ss.endsWith("img")) {
+                Bitmap bitmap = bitmapList.get(count);
+                mTextWidth = mTextPaint.measureText(ss.substring(0,ss.length()-3));
+                if (currentHeight < bitmapHeight) {
+                    StaticLayout sl = new StaticLayout(ss.substring(0,ss.length()-3), mTextPaint,(int)mTextWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);
+//从0,0开始绘制
+                    canvas.translate(paddingLeft,currentHeight);
+                    sl.draw(canvas);
+                    //canvas.drawText(ss, paddingLeft,currentHeight, mTextPaint);
+
+                    currentHeight += mLineHeight;
+                }else {canvas.drawText(ss.substring(0,ss.length()-3), paddingLeft,currentHeight, mTextPaint);}
+
+
+                int w=bitmap.getWidth();
+                if(bitmap.getWidth()>contentWidth-mTextWidth){
+                    Log.i(">>BitmapWidth",(int)(contentWidth-mTextWidth)+"");
+                    Log.i(">>BitmapHeight",(int)(bitmap.getHeight()*(contentWidth-mTextWidth)/bitmap.getHeight())+"");
+                    bitmap=resizeBitmap(bitmap,(int)(contentWidth-mTextWidth),(int)(bitmap.getHeight()*(contentWidth-mTextWidth)/bitmap.getWidth()));
+                }else{
+                    canvas.drawBitmap(bitmap, paddingLeft + mTextWidth, paddingTop, new Paint());
+                }
+                Log.i(">>bitmapPos",paddingLeft + mTextWidth+" "+paddingTop);
+                Log.i(">>bitmapNewSize",bitmap.getWidth()+" "+getHeight());
+                bitmapHeight=bitmap.getHeight();
+
+                canvas.drawBitmap(bitmap, paddingLeft + mTextWidth, paddingTop, new Paint());
+                currentHeight += mLineHeight;
+                count++;
+            }else {
+                if (currentHeight < bitmapHeight) {
+                    StaticLayout sl = new StaticLayout(ss, mTextPaint,(int)mTextWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);
+//从0,0开始绘制
+                    canvas.translate(paddingLeft,currentHeight);
+                    sl.draw(canvas);
+                    //canvas.drawText(ss, paddingLeft,currentHeight, mTextPaint);
+
+                    currentHeight += mLineHeight;
+                }else{
+                    canvas.drawText(ss, paddingLeft,currentHeight, mTextPaint);
+                }
+            }
+
+        }
+        //canvas.drawBitmap(bitmapList.get(0),paddingLeft,paddingTop+mLineHeight,mTextPaint);
         // Draw the example drawable on top of the text.
 
     }
-
+    private void cacuLineHeight()
+    {
+        layout = new StaticLayout("爱我中华", mTextPaint, 0, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0f, false);
+        mLineHeight = layout.getLineBottom(0) - layout.getLineTop(0);
+    }
     public void setText(CharSequence sequence) {
         ArrayList<URI> urlImage = new ArrayList<>();
         SpannableStringBuilder spanBuilder = null;
@@ -143,7 +206,8 @@ public class PicWordView extends View {
                     Drawable drawable = getResources().getDrawable(Integer.parseInt(matcher.group(1)));
                     ImageSpan span = new ImageSpan(drawable, ImageSpan.ALIGN_BASELINE);
                     spanBuilder.setSpan(span, start, end, Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
-                    spanBuilder.append("\n");
+                    spanBuilder.replace(start,end,"img\n");
+
                 } else {
                     urlImage.add(URI.create(matcher.group()));
                 }
@@ -160,14 +224,16 @@ public class PicWordView extends View {
         } catch (Exception exp) {
             exp.printStackTrace();
         } finally {
+            mExampleString.clear();
             mExampleString=spanBuilder;
+            invalidateTextPaintAndMeasurements();
             imageLoad();
         }
 
     }
 
     private void imageLoad() {
-        ImageSpan[] s = mExampleString.getSpans(0, 16, ImageSpan.class);
+        ImageSpan[] s = mExampleString.getSpans(0,mExampleString.length(), ImageSpan.class);
         for (int i = 0; i < s.length; i++) {
             Drawable drawables = s[i].getDrawable();
             bitmapList.add(drawable2Bitmap(drawables));
@@ -194,6 +260,26 @@ public class PicWordView extends View {
             return null ;
         }
     }
+    private Bitmap resizeBitmap(Bitmap bitmap,int w,int h)
+    {
+        if(bitmap!=null)
+        {
+            int width = bitmap.getWidth();
+            int height = bitmap.getHeight();
+            int newWidth = w;
+            int newHeight = h;
+            float scaleWight = ((float)newWidth)/width;
+            float scaleHeight = ((float)newHeight)/height;
+            Matrix matrix = new Matrix();
+            matrix.postScale(scaleWight, scaleHeight);
+            Bitmap res = Bitmap.createBitmap(bitmap, 0,0,width, height, matrix, true);
+            return res;
+
+        }
+        else{
+            return null;
+        }
+    }
     public void setPos(int x,int y){
         Pos p=new Pos();
         p.posX=x;
@@ -204,9 +290,20 @@ public class PicWordView extends View {
         int posX;
         int posY;
     }
-    private void addText(String s){
+    public void addText(CharSequence s){
 
+        mExampleString.append(s);
+        setText(mExampleString);
+
+    }
+
+    private void getPicSize(Bitmap bitmap){
+        int height = bitmap.getHeight();
+        int width= bitmap.getWidth();
 
 
     }
+
+
+
 }

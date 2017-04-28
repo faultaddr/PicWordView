@@ -10,6 +10,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         picWordView=(PicWordView)findViewById(R.id.picword);
-        picWordView.setText("fdsafdsfafsdaf<img" + R.drawable.main_activity_receive + "/>fdsafsdafsdfds");
+        picWordView.addText("fdsafdsfafsdaf"+"<img" + R.drawable.main_picture + "/>fdsafsdafsdfds\n");
+        picWordView.addText("你是不是个傻逼");
+        picWordView.addText("你就是个傻逼<img"+R.drawable.main_picture+"/>");
     }
 }
