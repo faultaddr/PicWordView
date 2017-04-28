@@ -44,11 +44,16 @@ public class PicWordView extends View {
     private TextPaint mTextPaint;
     private float mTextWidth;
     private float mTextHeight;
+    private int picPosX;
+    private int picPosY;
     private CharSequence mData = null;
-
+    private String TAG_POS="";
     private LinearLayout mContentView = null;
     ArrayList<Bitmap> bitmapList = new ArrayList<>();
     ArrayList<Pos>posList=new ArrayList<>();
+
+
+
     public PicWordView(Context context) {
         super(context);
         init(null, 0);
@@ -108,6 +113,7 @@ public class PicWordView extends View {
         mTextHeight = fontMetrics.bottom;
     }
 
+
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
     protected void onDraw(Canvas canvas) {
@@ -122,56 +128,79 @@ public class PicWordView extends View {
 
         int contentWidth = getWidth() - paddingLeft - paddingRight;
         int contentHeight = getHeight() - paddingTop - paddingBottom;
-        Log.i("String",mExampleString.toString());
+        Log.i("contentHeight width",contentHeight+" "+contentWidth);
         // Draw the text.
-
-        int currentHeight=paddingTop+mLineHeight;
+        Log.i("String",mExampleString.toString());
+        int currentHeight=paddingTop;
 
         String s[]=mExampleString.toString().split("\n");
         int count=0;
         float bitmapHeight=0;
         for(String ss:s) {
+            Log.i("ss",ss);
+            if (ss.endsWith("img")) {
+                if(TAG_POS.equals("right")||TAG_POS.equals("")) {
+                    Bitmap bitmap = bitmapList.get(count);
+                    mTextWidth = mTextPaint.measureText(ss.substring(0, ss.length() - 3));
+                    if (currentHeight < bitmapHeight) {
+                        StaticLayout sl = new StaticLayout(ss.substring(0, ss.length() - 3), mTextPaint, (int) mTextWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);
+            //从0,0开始绘制
+                        canvas.translate(paddingLeft, currentHeight);
+                        sl.draw(canvas);
+                        //canvas.drawText(ss, paddingLeft,currentHeight, mTextPaint);
+                        currentHeight += mLineHeight;
+                    } else {
+                        canvas.drawText(ss.substring(0, ss.length() - 3), paddingLeft, currentHeight, mTextPaint);
+                    }
+                    int w = bitmap.getWidth();
+                    if (bitmap.getWidth() > contentWidth - mTextWidth) {
+                        bitmap = resizeBitmap(bitmap, (int) (contentWidth - mTextWidth), (int) (bitmap.getHeight() * (contentWidth - mTextWidth) / bitmap.getWidth()));
+                    } else {
+                        canvas.drawBitmap(bitmap, paddingLeft + mTextWidth, paddingTop, new Paint());
+                    }
+                    bitmapHeight = bitmap.getHeight();
 
-            if (ss.endsWith("img")||ss.endsWith("img")) {
-                Bitmap bitmap = bitmapList.get(count);
-                mTextWidth = mTextPaint.measureText(ss.substring(0,ss.length()-3));
-                if (currentHeight < bitmapHeight) {
-                    StaticLayout sl = new StaticLayout(ss.substring(0,ss.length()-3), mTextPaint,(int)mTextWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);
+                    canvas.drawBitmap(bitmap, paddingLeft + mTextWidth, paddingTop, new Paint());
+                    currentHeight += mLineHeight;
+                    count++;
+                }
+                if(TAG_POS.equals("center")){
+                    Bitmap bitmap = bitmapList.get(count);
+                    Log.i("center",bitmap.toString());
+                    mTextWidth = mTextPaint.measureText(ss.substring(0, ss.length() - 3));
+                    StaticLayout sl = new StaticLayout(ss.substring(0, ss.length() - 3), mTextPaint,getWidth(), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);
 //从0,0开始绘制
-                    canvas.translate(paddingLeft,currentHeight);
+                    canvas.translate(paddingLeft, currentHeight);
                     sl.draw(canvas);
                     //canvas.drawText(ss, paddingLeft,currentHeight, mTextPaint);
-
                     currentHeight += mLineHeight;
-                }else {canvas.drawText(ss.substring(0,ss.length()-3), paddingLeft,currentHeight, mTextPaint);}
+                    if (bitmap.getWidth() > contentWidth) {
+                        bitmap = resizeBitmap(bitmap,  (contentWidth),  (bitmap.getHeight() * (contentWidth) / bitmap.getWidth()));
+                    }
+                    bitmapHeight = bitmap.getHeight();
 
-
-                int w=bitmap.getWidth();
-                if(bitmap.getWidth()>contentWidth-mTextWidth){
-                    Log.i(">>BitmapWidth",(int)(contentWidth-mTextWidth)+"");
-                    Log.i(">>BitmapHeight",(int)(bitmap.getHeight()*(contentWidth-mTextWidth)/bitmap.getHeight())+"");
-                    bitmap=resizeBitmap(bitmap,(int)(contentWidth-mTextWidth),(int)(bitmap.getHeight()*(contentWidth-mTextWidth)/bitmap.getWidth()));
-                }else{
-                    canvas.drawBitmap(bitmap, paddingLeft + mTextWidth, paddingTop, new Paint());
+                    canvas.drawBitmap(bitmap, paddingLeft, currentHeight, new Paint());
+                    currentHeight+=bitmapHeight;
+                    count++;
                 }
-                Log.i(">>bitmapPos",paddingLeft + mTextWidth+" "+paddingTop);
-                Log.i(">>bitmapNewSize",bitmap.getWidth()+" "+getHeight());
-                bitmapHeight=bitmap.getHeight();
 
-                canvas.drawBitmap(bitmap, paddingLeft + mTextWidth, paddingTop, new Paint());
-                currentHeight += mLineHeight;
-                count++;
             }else {
                 if (currentHeight < bitmapHeight) {
-                    StaticLayout sl = new StaticLayout(ss, mTextPaint,(int)mTextWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);
-//从0,0开始绘制
+                    StaticLayout sl = new StaticLayout(ss, mTextPaint,getWidth(), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);
+
                     canvas.translate(paddingLeft,currentHeight);
                     sl.draw(canvas);
                     //canvas.drawText(ss, paddingLeft,currentHeight, mTextPaint);
 
                     currentHeight += mLineHeight;
                 }else{
-                    canvas.drawText(ss, paddingLeft,currentHeight, mTextPaint);
+                    StaticLayout sl = new StaticLayout(ss, mTextPaint,getWidth(), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);
+
+                    canvas.translate(paddingLeft,currentHeight);
+                    sl.draw(canvas);
+                    //canvas.drawText(ss, paddingLeft,currentHeight, mTextPaint);
+
+                    currentHeight += mLineHeight;
                 }
             }
 
@@ -180,6 +209,14 @@ public class PicWordView extends View {
         // Draw the example drawable on top of the text.
 
     }
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec){
+        //设置该View大小为 80 80
+        setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec),MeasureSpec.getSize(heightMeasureSpec)*4);
+    }
+
+
+
     private void cacuLineHeight()
     {
         layout = new StaticLayout("爱我中华", mTextPaint, 0, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0f, false);
@@ -300,10 +337,19 @@ public class PicWordView extends View {
     private void getPicSize(Bitmap bitmap){
         int height = bitmap.getHeight();
         int width= bitmap.getWidth();
+    }
+    /*
+    * params:center/left/right/default
+    *center:放到当前行下面的中间
+    *left：放在当前行左边
+    *right：放在当前行右边
+    *default("")：放在当前行右边
+    * */
 
+    public void setPicMode(String mode){
+        TAG_POS=mode;
 
     }
-
 
 
 }
