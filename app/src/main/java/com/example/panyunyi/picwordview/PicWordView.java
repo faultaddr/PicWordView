@@ -138,8 +138,8 @@ public class PicWordView extends View {
         float bitmapHeight=0;
         for(String ss:s) {
             Log.i("ss",ss);
-            if (ss.endsWith("img")) {
-                if(TAG_POS.equals("right")||TAG_POS.equals("")) {
+            if (ss.endsWith("img")) {//如果带有img标签
+                if(TAG_POS.equals("right")||TAG_POS.equals("")) {//带有right标签或者为空
                     Bitmap bitmap = bitmapList.get(count);
                     mTextWidth = mTextPaint.measureText(ss.substring(0, ss.length() - 3));
                     if (currentHeight < bitmapHeight) {
@@ -154,54 +154,68 @@ public class PicWordView extends View {
                     }
                     int w = bitmap.getWidth();
                     if (bitmap.getWidth() > contentWidth - mTextWidth) {
-                        bitmap = resizeBitmap(bitmap, (int) (contentWidth - mTextWidth), (int) (bitmap.getHeight() * (contentWidth - mTextWidth) / bitmap.getWidth()));
+                        bitmap = resizeBitmap(bitmap, (int) (contentWidth - mTextWidth), (int) (bitmap.getHeight() * ((contentWidth - mTextWidth) / bitmap.getWidth())));
                     } else {
-                        canvas.drawBitmap(bitmap, paddingLeft + mTextWidth, paddingTop, new Paint());
+                        canvas.drawBitmap(bitmap, paddingLeft + mTextWidth, currentHeight, new Paint());
                     }
                     bitmapHeight = bitmap.getHeight();
 
-                    canvas.drawBitmap(bitmap, paddingLeft + mTextWidth, paddingTop, new Paint());
+                    canvas.drawBitmap(bitmap, paddingLeft + mTextWidth, currentHeight, new Paint());
                     currentHeight += mLineHeight;
                     count++;
                 }
                 if(TAG_POS.equals("center")){
                     Bitmap bitmap = bitmapList.get(count);
+                    Log.i("bitmapHeight",""+bitmap.getHeight());
                     Log.i("center",bitmap.toString());
                     mTextWidth = mTextPaint.measureText(ss.substring(0, ss.length() - 3));
-                    StaticLayout sl = new StaticLayout(ss.substring(0, ss.length() - 3), mTextPaint,getWidth(), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);
+                    StaticLayout sl = new StaticLayout(ss.substring(0, ss.length() - 3), mTextPaint,contentWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
 //从0,0开始绘制
+
+                     Log.i("currentHeight",currentHeight+"");
                     canvas.translate(paddingLeft, currentHeight);
+                    currentHeight=0;
                     sl.draw(canvas);
                     //canvas.drawText(ss, paddingLeft,currentHeight, mTextPaint);
-                    currentHeight += mLineHeight;
+                    currentHeight += sl.getHeight();
+                    //canvas.translate(paddingLeft, 0);
                     if (bitmap.getWidth() > contentWidth) {
-                        bitmap = resizeBitmap(bitmap,  (contentWidth),  (bitmap.getHeight() * (contentWidth) / bitmap.getWidth()));
+                        bitmap = resizeBitmap(bitmap,  (contentWidth),  (int)(bitmap.getHeight() *((contentWidth)*1.0 / bitmap.getWidth())));
                     }
                     bitmapHeight = bitmap.getHeight();
-
-                    canvas.drawBitmap(bitmap, paddingLeft, currentHeight, new Paint());
-                    currentHeight+=bitmapHeight;
+                    Log.i("bitmapHeight",""+bitmapHeight);
+                    canvas.drawBitmap(bitmap, paddingLeft,currentHeight , new Paint());
+                    currentHeight+=bitmapHeight ;
+                    Log.i("currentHeight",currentHeight+"");
                     count++;
                 }
 
             }else {
+                Log.i("pureString",currentHeight+"");
                 if (currentHeight < bitmapHeight) {
-                    StaticLayout sl = new StaticLayout(ss, mTextPaint,getWidth(), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);
+                    StaticLayout sl = new StaticLayout(ss, mTextPaint,getWidth(), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
 
                     canvas.translate(paddingLeft,currentHeight);
+                    currentHeight=0;
                     sl.draw(canvas);
                     //canvas.drawText(ss, paddingLeft,currentHeight, mTextPaint);
 
-                    currentHeight += mLineHeight;
+                    currentHeight += sl.getHeight();
+                    Log.i("currentHeight",currentHeight+"");
+
                 }else{
-                    StaticLayout sl = new StaticLayout(ss, mTextPaint,getWidth(), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, true);
+                    StaticLayout sl = new StaticLayout(ss, mTextPaint,getWidth(), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
 
                     canvas.translate(paddingLeft,currentHeight);
+                    currentHeight=0;
                     sl.draw(canvas);
                     //canvas.drawText(ss, paddingLeft,currentHeight, mTextPaint);
 
-                    currentHeight += mLineHeight;
-                }
+                    currentHeight += sl.getHeight();
+                    Log.i("currentHeight",currentHeight+"");
+                    Log.i("LineHeight",mLineHeight+"");
+            }
+                Log.i("pureString",currentHeight+"");
             }
 
         }
